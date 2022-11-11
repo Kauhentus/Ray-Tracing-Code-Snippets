@@ -1,6 +1,7 @@
 # Ray-Tracing-Code-Snippets
 
-# Snippet 1
+# Snippet 1:
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -17,10 +18,11 @@
 </html>
 ```
 
-# Snippet 2
+# Snippet 2:
+
 ```js
-const W = 300 * 4;
-const H = 225 * 4;
+const W = 300 * 2;
+const H = 225 * 2;
 const EPS = 1e-8;
 
 /** @type {HTMLCanvasElement} **/
@@ -33,26 +35,48 @@ ctx.fillStyle = 'black'
 ctx.fillRect(0, 0, W, H);
 ```
 
-# Snippet 3
+# Snippet "Vectors":
+
 ```js
-const imageData = ctx.createImageData(W, H);
-const pixels = imageData.data; // [# pixels * 4 channels]
+const vec3_init = (k) => [k, k, k];
+const vec3_mag = (v) => Math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2);
+const vec3_mag_squared = (v) => v[0] ** 2 + v[1] ** 2 + v[2] ** 2;
+const vec3_normalize = (v) => (length = vec3_mag(v), [v[0] / length, v[1] / length, v[2] / length]);
+const vec3_dist = (u, v) => vec3_mag(vec3_sub(u, v));
+const vec3_add = (u, v) => [v[0] + u[0], v[1] + u[1], v[2] + u[2]];
+const vec3_sub = (u, v) => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+const vec3_1D_mul = (u, v) => [u[0] * v[0], u[1] * v[1], u[2] * v[2]];
+const vec3_scal_add = (v, k) => [v[0] + k, v[1] + k, v[2] + k];
+const vec3_scal_mult = (v, k) => [v[0] * k, v[1] * k, v[2] * k];
+const vec3_scal_pow = (v, k) => [v[0] ** k, v[1] ** k, v[2] ** k];
+const vec3_dot = (u, v) => v[0]*u[0] + v[1]*u[1] + v[2]*u[2];
+const vec3_cross = (u, v) => [u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]];
+const vec3_reflect = (direction, normal) =>  vec3_sub(vec3_scal_mult(normal, 2 * vec3_dot(direction, normal)), direction);
+```
+
+# Snippet 3:
+
+```js
+const image_data = ctx.createImageData(W, H);
+const pixels = image_data.data; // [# pixels * 4 channels]
 
 for(let y = 0; y < H; y++){
 	for(let x = 0; x < W; x++){
 		const i = (y * W + x) * 4;
-    
-		pixels[i] = 0;		      // R
-		pixels[i + 1] = 125;	  // G
-		pixels[i + 2] = 255;	  // B
-		pixels[i + 3] = 255;		// A
+		
+		pixels[i] = 0;		    // R
+		pixels[i + 1] = 125;	// G
+		pixels[i + 2] = 255;	// B
+		pixels[i + 3] = 255;	// A
 	}
 }
+
+ctx.putImageData(image_data, 0, 0);
 console.log("DONE")
-ctx.putImageData(imageData, 0, 0);
 ```
 
-# Snippet 4
+# Snippet 4:
+
 ```js
 class Ray {
     constructor(origin, direction){
@@ -61,25 +85,26 @@ class Ray {
     }
 }
 
-const focalLength = -1;
+const focal_length = -1;
 const vertical_field_of_view = Math.PI / 4;
-const rayFromCameraPixel = (x, y) => {
-    const Hp = -2 * Math.tan(vertical_field_of_view / 2);
-	const Wp = Hp * W / H;
+const ray_from_camera_pixel = (x, y) => {
+    const h_p = -2 * Math.tan(vertical_field_of_view / 2);
+	const w_p = h_p * W / H;
     const ray_origin = [
-		focalLength * (x / W - 0.5) * Wp,
-		focalLength * -(y / H - 0.5) * Hp,
-        focalLength
+		focal_length * (x / W - 0.5) * w_p,
+		focal_length * -(y / H - 0.5) * h_p,
+        focal_length
     ];
     const ray_direction = vec3_normalize(ray_origin);
     return new Ray(ray_origin, ray_direction);
 }
 ```
 
-# Snippet 5
+# Snippet 5:
+
 ```js
 class Sphere {
-	constructor(position, radius, color, reflective, specular = 1){
+	constructor(position, radius, color, reflective, specular){
 		this.position = position;
 		this.radius = radius;
 		this.color = color;
@@ -87,18 +112,21 @@ class Sphere {
 		this.specular = specular;
 	}
 }
+
 const sphere_array = [
 	new Sphere([0, 0, -13], 3, [255, 255, 255], 0.5, 10)
 ];
 ```
 
 # Snippet 6
+
 ```js
-const ray_sphere_intersection = (point, direction, sphere) => {
-    const vec_between = vec3_sub(point, sphere.position);
+const ray_sphere_intersection = (ray, sphere) => {
+    const vec_between = vec3_sub(ray.origin, sphere.position);
     const a = 1;
-    const b = 2 * vec3_dot(direction, vec_between);
+    const b = 2 * vec3_dot(ray.direction, vec_between);
     const c = vec3_mag_squared(vec_between) - sphere.radius ** 2;
+
     if(b**2 - 4*a*c > 0) {
 		return (-b - Math.sqrt(b**2 - 4*a*c)) / (2*a);
 	}
@@ -109,46 +137,217 @@ const ray_sphere_intersection = (point, direction, sphere) => {
 ```
 
 # Snippet 7
+
 ```js
 const closest_intersection = (ray) => {
 	let closest_t = Infinity;
-	let closestSphere = null;
+	let closest_sphere = null;
 
 	for(let sphere of sphere_array){
-		const new_t = ray_sphere_intersection(ray.origin, ray.direction, sphere);
+		const new_t = ray_sphere_intersection(ray, sphere);
 		if(new_t != null && new_t < closest_t && EPS < new_t){
 			closest_t = new_t;
-			closestSphere = sphere;
+			closest_sphere = sphere;
 		}
 	}
 
-	return [closestSphere, closest_t];
+	return [closest_sphere, closest_t];
 }
 ```
 
 # Snippet 8
+
 ```js
 const trace_ray = (ray) => {
 	let closest_intersection_output = closest_intersection(ray);
-	let [closestSphere, closest_t] = closest_intersection_output;
+	let [closest_sphere, closest_t] = closest_intersection_output;
 
-	if(closestSphere == null) return [0, 0, 0];
-  else return [255, 255, 255];
+	if(closest_sphere == null) return [0, 0, 0];
+	else return [255, 255, 255];
 }
 
-/* ... */
+const image_data = ctx.createImageData(W, H);
+const pixels = image_data.data; // [# pixels * 4 channels]
 
 for(let y = 0; y < H; y++){
 	for(let x = 0; x < W; x++){
 		const i = (y * W + x) * 4;
 
-		const ray = rayFromCameraPixel(x, y);
+		const ray = ray_from_camera_pixel(x, y);
 		const color = trace_ray(ray);
-		
-		pixels[i] = color[0];		  // R
+	
+		pixels[i] = color[0];		// R
 		pixels[i + 1] = color[1];	// G
 		pixels[i + 2] = color[2];	// B
-		pixels[i + 3] = 255;		  // A
+		pixels[i + 3] = 255;	// A
 	}
+}
+```
+
+# Snippet 9
+
+```js
+class PointLight {
+    constructor(position, power = 10, color = [1, 1, 1]){
+        this.position = position;
+        this.power = power;
+        this.color = vec3_scal_mult(vec3_normalize(color), power);
+    }
+}
+
+const light_array = [
+    new PointLight([-5, 5, 0], 800, [0.1, 0.4, 0.9]),
+    new PointLight([5, 5, -10], 800, [0.9, 0.6, 0.1]),
+];
+```
+
+# Snippet 10
+
+```js
+const compute_lighting = (point, normal, ray, specular) => {
+    let accumulated_light = vec3_init(10); // ambient light
+
+    for(let light of light_array){
+        const direction_to_light = vec3_sub(light.position, point);
+        const effective_light = vec3_dot(normal, direction_to_light);
+		
+		const cos_term = effective_light / (vec3_mag(direction_to_light) * vec3_mag(normal));
+		const power_falloff = 1 / (4 * Math.PI * vec3_mag(direction_to_light) ** 2);
+		const added_light = vec3_scal_mult(light.color, light.power * cos_term * power_falloff);
+		accumulated_light = vec3_add(accumulated_light, added_light);
+	}
+    return accumulated_light;
+}
+```
+
+# Snippet 11
+
+```js
+const trace_ray = (ray, depth) => {
+	let closest_intersection_output = closest_intersection(ray);
+	let [closest_sphere, closest_t] = closest_intersection_output;
+
+	if(closest_sphere == null) return [0, 0, 0];
+	
+	const intersection = vec3_add(ray.origin, vec3_scal_mult(ray.direction, closest_t));
+	const intersection_normal = vec3_normalize(vec3_sub(intersection, closest_sphere.position));
+	const light = compute_lighting(intersection, intersection_normal, ray, closest_sphere.specular);
+	const color = vec3_scal_mult(vec3_1D_mul(vec3_normalize(closest_sphere.color), vec3_scal_mult(light, 1 / 255)), 400);
+
+	return color;
+}
+```
+
+# Snippet 12
+
+```js
+const sphere_array = [
+    new Sphere([0, -80, -40], 80, [255, 255, 255], 0.5, 50),
+
+	new Sphere([-6, 0, -13], 3, [255, 255, 255], 0.5, 10),
+	new Sphere([6, 0, -13], 3, [255, 255, 255], 0.5, 50),
+	new Sphere([0, 0, -20], 3, [255, 255, 255], 0.5, 10),
+];
+```
+
+# Snippet 13
+
+```js
+const trace_ray = (ray, depth) => {
+	let closest_intersection_output = closest_intersection(ray);
+	let [closest_sphere, closest_t] = closest_intersection_output;
+
+	if(closest_sphere == null) return [0, 0, 0];
+	
+	const intersection = vec3_add(ray.origin, vec3_scal_mult(ray.direction, closest_t));
+	const intersection_normal = vec3_normalize(vec3_sub(intersection, closest_sphere.position));
+	const light = compute_lighting(intersection, intersection_normal, ray, closest_sphere.specular);
+	const color = vec3_scal_mult(vec3_1D_mul(vec3_normalize(closest_sphere.color), vec3_scal_mult(light, 1 / 255)), 400);
+
+	if(depth <= 0 || closest_sphere.reflective == 0) return color;
+
+	const reflected_direction = vec3_reflect(vec3_scal_mult(ray.direction, -1), intersection_normal);
+	const reflected_color = trace_ray(new Ray(intersection, reflected_direction), depth - 1);
+
+	const base_color_component = vec3_scal_mult(color, (1 - closest_sphere.reflective));
+	const reflected_color_component = vec3_scal_mult(reflected_color, closest_sphere.reflective);
+	return vec3_add(base_color_component, reflected_color_component);
+}
+```
+
+# Snippet 14
+
+```js
+for(let y = 0; y < H; y++){
+	for(let x = 0; x < W; x++){
+		const i = (y * W + x) * 4;
+
+		const ray = ray_from_camera_pixel(x, y);
+		const color = trace_ray(ray, 4);
+		
+		pixels[i] = color[0];		// R
+		pixels[i + 1] = color[1];	// G
+		pixels[i + 2] = color[2];	// B
+		pixels[i + 3] = 255;	// A
+	}
+}
+```
+
+# Snippet 15
+
+```js
+const compute_lighting = (point, normal, ray, specular) => {
+    let accumulated_light = vec3_init(10); // ambient light
+
+    for(let light of light_array){
+        const direction_to_light = vec3_sub(light.position, point);
+        const effective_light = vec3_dot(normal, direction_to_light);
+
+		let [blockingSphere, _] = closest_intersection(new Ray(point, vec3_normalize(direction_to_light)));
+
+        if(blockingSphere == null && effective_light > 0){
+			const cos_term = effective_light / (vec3_mag(direction_to_light) * vec3_mag(normal));
+            const power_falloff = 1 / (4 * Math.PI * vec3_mag(direction_to_light) ** 2);
+            const added_light = vec3_scal_mult(light.color, light.power * cos_term * power_falloff);
+            accumulated_light = vec3_add(accumulated_light, added_light);
+		}
+	}
+    return accumulated_light;
+}
+```
+
+# Snippet 16
+
+```js
+const compute_lighting = (point, normal, ray, specular) => {
+    let accumulated_light = vec3_init(10); // ambient light
+
+    for(let light of light_array){
+        const direction_to_light = vec3_sub(light.position, point);
+        const effective_light = vec3_dot(normal, direction_to_light);
+
+		let [blockingSphere, _] = closest_intersection(new Ray(point, vec3_normalize(direction_to_light)));
+
+        if(blockingSphere == null && effective_light > 0){
+			const cos_term = effective_light / (vec3_mag(direction_to_light) * vec3_mag(normal));
+            const power_falloff = 1 / (4 * Math.PI * vec3_mag(direction_to_light) ** 2);
+            const added_light = vec3_scal_mult(light.color, light.power * cos_term * power_falloff);
+            accumulated_light = vec3_add(accumulated_light, added_light);
+		}
+
+		if(specular >= 0){
+			const reflected_light_direction = vec3_reflect(vec3_scal_mult(direction_to_light, -1), normal);
+			const effective_specular = vec3_dot(reflected_light_direction, ray.direction);
+
+			if(effective_specular > 0){
+				const cos_term = effective_specular / (vec3_mag(reflected_light_direction) * vec3_mag(ray.direction));
+                const power_falloff = 1 / (4 * Math.PI * vec3_mag(direction_to_light) ** 2);
+				const added_light = vec3_scal_mult(light.color, light.power * (cos_term ** specular) * power_falloff);
+
+				accumulated_light = vec3_add(accumulated_light, added_light);
+			}
+		}
+	}
+    return accumulated_light;
 }
 ```
