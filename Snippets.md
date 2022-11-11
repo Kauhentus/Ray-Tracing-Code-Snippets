@@ -1,5 +1,3 @@
-# Ray-Tracing-Code-Snippets
-
 # Snippet 1:
 
 ```html
