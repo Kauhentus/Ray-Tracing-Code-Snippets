@@ -85,6 +85,7 @@ class Ray {
 
 const focal_length = -1;
 const vertical_field_of_view = Math.PI / 4;
+// maps canvas (x, y) pixel to a ray from the corresponding camera pixel
 const ray_from_camera_pixel = (x, y) => {
     const h_p = -2 * Math.tan(vertical_field_of_view / 2);
 	const w_p = h_p * W / H;
@@ -119,6 +120,7 @@ const sphere_array = [
 # Snippet 6
 
 ```js
+// given a ray and sphere: if they intersect returns the t parameter of their intersection, otherwise return null
 const ray_sphere_intersection = (ray, sphere) => {
     const vec_between = vec3_sub(ray.origin, sphere.position);
     const a = 1;
@@ -137,6 +139,7 @@ const ray_sphere_intersection = (ray, sphere) => {
 # Snippet 7
 
 ```js
+// given a ray, returns the closest sphere from the ray origin that the ray intersects (possibly null)
 const closest_intersection = (ray) => {
 	let closest_t = Infinity;
 	let closest_sphere = null;
@@ -156,6 +159,7 @@ const closest_intersection = (ray) => {
 # Snippet 8
 
 ```js
+// given a ray and recursive depth, shoots the ray and returns the total light the corresponding camera pixel receives
 const trace_ray = (ray) => {
 	let closest_intersection_output = closest_intersection(ray);
 	let [closest_sphere, closest_t] = closest_intersection_output;
@@ -202,6 +206,7 @@ const light_array = [
 # Snippet 10
 
 ```js
+// returns the amount of light at point given the point of intersection with the surface, surface normal at the intersection, the ray that intersected, and the surface's specular value
 const compute_lighting = (point, normal, ray, specular) => {
     let accumulated_light = vec3_init(10); // ambient light
 
@@ -221,6 +226,7 @@ const compute_lighting = (point, normal, ray, specular) => {
 # Snippet 11
 
 ```js
+// given a ray and recursive depth, shoots the ray and returns the total light the corresponding camera pixel receives
 const trace_ray = (ray, depth) => {
 	let closest_intersection_output = closest_intersection(ray);
 	let [closest_sphere, closest_t] = closest_intersection_output;
@@ -251,6 +257,7 @@ const sphere_array = [
 # Snippet 13
 
 ```js
+// given a ray and recursive depth, shoots the ray and returns the total light the corresponding camera pixel receives
 const trace_ray = (ray, depth) => {
 	let closest_intersection_output = closest_intersection(ray);
 	let [closest_sphere, closest_t] = closest_intersection_output;
@@ -294,6 +301,7 @@ for(let y = 0; y < H; y++){
 # Snippet 15
 
 ```js
+// returns the amount of light at point given the point of intersection with the surface, surface normal at the intersection, the ray that intersected, and the surface's specular value
 const compute_lighting = (point, normal, ray, specular) => {
     let accumulated_light = vec3_init(10); // ambient light
 
@@ -317,6 +325,7 @@ const compute_lighting = (point, normal, ray, specular) => {
 # Snippet 16
 
 ```js
+// returns the amount of light at point given the point of intersection with the surface, surface normal at the intersection, the ray that intersected, and the surface's specular value
 const compute_lighting = (point, normal, ray, specular) => {
     let accumulated_light = vec3_init(10); // ambient light
 
